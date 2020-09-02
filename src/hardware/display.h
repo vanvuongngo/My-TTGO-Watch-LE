@@ -33,7 +33,7 @@
 
     typedef struct {
         uint32_t brightness = DISPLAY_MAX_BRIGHTNESS;
-        uint32_t timeout = DISPLAY_MIN_TIMEOUT;
+        uint32_t timeout = DISPLAY_MAX_TIMEOUT;
         uint32_t rotation = 0;
         bool block_return_maintile = false;
     } display_config_t;
