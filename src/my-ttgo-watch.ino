@@ -24,6 +24,8 @@
 #include "config.h"
 #include <Arduino.h>
 #include "esp_bt.h"
+#include "esp_task_wdt.h"
+#include <TTGO.h>
 
 #include "gui/gui.h"
 #include "gui/splashscreen.h"
@@ -36,12 +38,15 @@
 #include "hardware/blectl.h"
 #include "hardware/pmu.h"
 #include "hardware/timesync.h"
+#include "hardware/sound.h"
 
-//#include "app/weather/weather.h"
-//#include "app/stopwatch/stopwatch_app.h"
-//#include "app/crypto_ticker/crypto_ticker.h"
-//#include "app/example_app/example_app.h"
-//#include "app/osmand/osmand_app.h"
+// #include "app/weather/weather.h"
+// #include "app/stopwatch/stopwatch_app.h"
+// #include "app/crypto_ticker/crypto_ticker.h"
+// #include "app/example_app/example_app.h"
+// #include "app/osmand/osmand_app.h"
+// #include "app/IRController/IRController.h"
+#include "app/powermeter/powermeter_app.h"
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
@@ -52,6 +57,7 @@ void setup()
 {
     Serial.begin(115200);
     Serial.printf("starting t-watch V1, version: " __FIRMWARE__ "\r\n");
+    Serial.printf("Configure watchdog to 30s: %d\r\n", esp_task_wdt_init( 30, true ) );
 
     ttgo->begin();
     ttgo->lvgl_begin();
@@ -70,6 +76,14 @@ void setup()
     if ( !SPIFFS.begin() ) {
         splash_screen_stage_update( "format spiff", 30 );
         SPIFFS.format();
+        splash_screen_stage_update( "format spiff done", 40 );
+        delay(500);
+        bool remount_attempt = SPIFFS.begin();
+        if (!remount_attempt){
+            splash_screen_stage_update( "Err: SPIFF Failed", 0 );
+            delay(3000);
+            ESP.restart();
+        }
     }
 
     splash_screen_stage_update( "init rtc", 50 );
@@ -82,13 +96,14 @@ void setup()
     /*
      * add apps and widgets here!!!
      */
-
     // TODO: reactivate when double check that wifi is working
     // weather_app_setup();
     // stopwatch_app_setup();
     // crypto_ticker_setup();
     // example_app_setup();
     // osmand_app_setup();
+    // IRController_setup();
+    powermeter_app_setup();
     /*
      *
      */
@@ -100,6 +115,8 @@ void setup()
     blectl_setup();
 
     display_set_brightness( display_get_brightness() );
+
+    sound_setup();
 
     delay(500);
 
@@ -118,6 +135,7 @@ void loop()
     previousMillis = currentMillis;
 
     gui_loop();
+    sound_loop();
     powermgm_loop();
   }
 }
