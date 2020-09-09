@@ -103,7 +103,7 @@ void setup()
     // example_app_setup();
     // osmand_app_setup();
     // IRController_setup();
-    powermeter_app_setup();
+    // powermeter_app_setup();
     /*
      *
      */
