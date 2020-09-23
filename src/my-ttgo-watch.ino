@@ -52,9 +52,6 @@
 
 TTGOClass *ttgo = TTGOClass::getWatch();
 
-unsigned long previousMillis = 0;
-const long interval = 5; // interval at which for loop (milliseconds)
-
 void setup()
 {
     Serial.begin(115200);
@@ -135,10 +132,5 @@ void setup()
 
 void loop()
 {
-  unsigned long currentMillis = millis();
-  if (currentMillis - previousMillis >= interval) {
-    previousMillis = currentMillis;
-
     powermgm_loop();
-  }
 }
