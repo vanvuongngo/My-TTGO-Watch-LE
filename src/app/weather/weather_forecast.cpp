@@ -52,7 +52,7 @@ lv_obj_t *weather_forecast_wind_label[ WEATHER_MAX_FORECAST ];
 static weather_forcast_t *weather_forecast = NULL;
 
 void weather_forecast_sync_Task( void * pvParameters );
-void weather_forecast_wifictl_event_cb( EventBits_t event, char* msg );
+bool weather_forecast_wifictl_event_cb( EventBits_t event, void *arg );
 
 LV_IMG_DECLARE(exit_32px);
 LV_IMG_DECLARE(setup_32px);
@@ -144,12 +144,10 @@ void weather_forecast_tile_setup( uint32_t tile_num ) {
 
     weather_forecast_event_handle = xEventGroupCreate();
 
-    wifictl_register_cb( WIFICTL_OFF | WIFICTL_CONNECT, weather_forecast_wifictl_event_cb );
+    wifictl_register_cb( WIFICTL_OFF | WIFICTL_CONNECT, weather_forecast_wifictl_event_cb, "weather forcecast" );
 }
 
-void weather_forecast_wifictl_event_cb( EventBits_t event, char* msg ) {
-    log_i("weather forecast wifictl event: %04x", event );
-    
+bool weather_forecast_wifictl_event_cb( EventBits_t event, void *arg ) {
     switch( event ) {
         case WIFICTL_CONNECT:       weather_config_t *tmp_weather_config = weather_get_config();
                                     if ( tmp_weather_config->autosync ) {
@@ -157,6 +155,7 @@ void weather_forecast_wifictl_event_cb( EventBits_t event, char* msg ) {
                                     }
                                     break;
     }
+    return( true );
 }
 
 static void exit_weather_widget_event_cb( lv_obj_t * obj, lv_event_t event ) {

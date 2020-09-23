@@ -23,6 +23,7 @@
     #define _POWERMGM_H
 
     #include "TTGO.h"
+    #include "callback.h"
 
     #define POWERMGM_STANDBY                    _BV(0)
     #define POWERMGM_STANDBY_REQUEST            _BV(1)
@@ -34,35 +35,28 @@
     #define POWERMGM_BMA_DOUBLECLICK            _BV(9)
     #define POWERMGM_BMA_TILT                   _BV(10)
     #define POWERMGM_RTC_ALARM                  _BV(11)
-
-    typedef void ( * POWERMGM_CALLBACK_FUNC ) ( EventBits_t event );
-
-    typedef struct {
-        EventBits_t event;
-        POWERMGM_CALLBACK_FUNC event_cb;
-    } powermgm_event_cb_t;
-
-    /*
+    
+    /**
      * @brief setp power managment, coordinate managment beween CPU, wifictl, pmu, bma, display, backlight and lvgl
      */
     void powermgm_setup( void );
-    /*
+    /**
      * @brief power managment loop routine, call from loop. not for user use
      */
     void powermgm_loop( void );
-    /*
+    /**
      * @brief trigger a power managemt event
      * 
      * @param   bits    event to trigger, example: POWERMGM_WIFI_ON_REQUEST for switch an WiFi
      */
     void powermgm_set_event( EventBits_t bits );
-    /*
+    /**
      * @brief clear a power managemt event
      * 
      * @param   bits    event to trigger, example: POWERMGM_WIFI_ON_REQUEST for switch an WiFi
      */
     void powermgm_clear_event( EventBits_t bits );
-    /*
+    /**
      * @brief get a power managemt event state
      * 
      * @param   bits    event state, example: POWERMGM_STANDBY to evaluate if the system in standby
@@ -70,12 +64,21 @@
      * @return  EventBits_t    event state
      */
     EventBits_t powermgm_get_event( EventBits_t bits );
-        /*
+    /**
      * @brief registers a callback function which is called on a corresponding event
      * 
      * @param   event               possible values: POWERMGM_STANDBY, POWERMGM_SILENCE_WAKEUP, POWERMGM_WAKEUP and POWERMGM_RTC_ALARM
-     * @param   powermgm_event_cb   pointer to the callback function 
+     * @param   callback_func       pointer to the callback function 
+     * @param   id                  pointer to an string
      */
-    void powermgm_register_cb( EventBits_t event, POWERMGM_CALLBACK_FUNC powermgm_event_cb );
+    bool powermgm_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
+    /**
+     * @brief registers a callback function which is called on a corresponding loop event
+     * 
+     * @param   event               possible values: POWERMGM_STANDBY, POWERMGM_SILENCE_WAKEUP, POWERMGM_WAKEUP
+     * @param   callback_func       pointer to the callback function 
+     * @param   id                  pointer to an string
+     */
+    bool powermgm_register_loop_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
 
 #endif // _POWERMGM_H

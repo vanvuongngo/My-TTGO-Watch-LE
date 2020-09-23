@@ -25,10 +25,12 @@
 #include "gui/mainbar/mainbar.h"
 #include "gui/mainbar/setup_tile/setup_tile.h"
 #include "gui/statusbar.h"
+#include "gui/sound/piep.h"
 #include "hardware/blectl.h"
 #include "hardware/powermgm.h"
 #include "hardware/motor.h"
 #include "hardware/json_psram_allocator.h"
+#include "hardware/sound.h"
 
 lv_obj_t *bluetooth_message_tile=NULL;
 lv_style_t bluetooth_message_style;
@@ -70,13 +72,13 @@ src_icon_t src_icon[] = {
 static bool bluetooth_message_active = true;
 
 static void exit_bluetooth_message_event_cb( lv_obj_t * obj, lv_event_t event );
-static void bluetooth_message_event_cb( EventBits_t event, char* msg );
-static void bluetooth_message_msg_pharse( char* msg );
+bool bluetooth_message_event_cb( EventBits_t event, void *arg );
+static void bluetooth_message_msg_pharse( const char* msg );
 const lv_img_dsc_t *bluetooth_message_find_img( const char * src_name );
 
 void bluetooth_message_tile_setup( void ) {
     // get an app tile and copy mainstyle
-    bluetooth_message_tile_num = mainbar_add_app_tile( 1, 1 );
+    bluetooth_message_tile_num = mainbar_add_app_tile( 1, 1, "bluetooth message" );
     bluetooth_message_tile = mainbar_get_tile_obj( bluetooth_message_tile_num );
 
     lv_style_copy( &bluetooth_message_style, mainbar_get_style() );
@@ -124,14 +126,17 @@ void bluetooth_message_tile_setup( void ) {
     lv_obj_align( exit_btn, bluetooth_message_tile, LV_ALIGN_IN_TOP_RIGHT, -10, 10 );
     lv_obj_set_event_cb( exit_btn, exit_bluetooth_message_event_cb );
 
-    blectl_register_cb( BLECTL_MSG, bluetooth_message_event_cb );
+    blectl_register_cb( BLECTL_MSG, bluetooth_message_event_cb, "bluetooth_message" );
 }
 
-static void bluetooth_message_event_cb( EventBits_t event, char* msg ) {
+bool bluetooth_message_event_cb( EventBits_t event, void *arg ) {
+    log_i("msg = %s", (char*)arg );
+    
     switch( event ) {
-        case BLECTL_MSG:            bluetooth_message_msg_pharse( msg );
+        case BLECTL_MSG:            bluetooth_message_msg_pharse( (const char*)arg );
                                     break;
     }
+    return( true );
 }
 
 static void exit_bluetooth_message_event_cb( lv_obj_t * obj, lv_event_t event ) {
@@ -162,14 +167,12 @@ const lv_img_dsc_t *bluetooth_message_find_img( const char * src_name ) {
     return( &message_32px );
 }
 
-void bluetooth_message_msg_pharse( char* msg ) {
+void bluetooth_message_msg_pharse( const char* msg ) {
     if ( bluetooth_message_active == false ) {
         return;
     }
 
-    log_i("msg: %s", msg );
-
-    SpiRamJsonDocument doc( strlen( msg ) * 2 );
+    SpiRamJsonDocument doc( strlen( msg ) * 4 );
 
     DeserializationError error = deserializeJson( doc, msg );
     if ( error ) {
@@ -216,6 +219,8 @@ void bluetooth_message_msg_pharse( char* msg ) {
             mainbar_jump_to_tilenumber( bluetooth_message_tile_num, LV_ANIM_OFF );
 
             lv_obj_invalidate( lv_scr_act() );
+
+            sound_play_progmem_wav( piep_wav, piep_wav_len );
         }
     }        
     doc.clear();

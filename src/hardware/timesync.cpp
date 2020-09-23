@@ -31,40 +31,66 @@
 
 EventGroupHandle_t time_event_handle = NULL;
 TaskHandle_t _timesync_Task;
-void timesync_Task( void * pvParameters );
-
 timesync_config_t timesync_config;
 
-void timesync_wifictl_event_cb( EventBits_t event, char* msg );
+void timesync_Task( void * pvParameters );
+bool timesync_powermgm_event_cb( EventBits_t event, void *arg );
+bool timesync_wifictl_event_cb( EventBits_t event, void *arg );
 
 void timesync_setup( void ) {
 
     timesync_read_config();
     time_event_handle = xEventGroupCreate();
 
-    wifictl_register_cb( WIFICTL_CONNECT, timesync_wifictl_event_cb );
+    wifictl_register_cb( WIFICTL_CONNECT, timesync_wifictl_event_cb, "timesync" );
+    powermgm_register_cb( POWERMGM_SILENCE_WAKEUP | POWERMGM_STANDBY | POWERMGM_WAKEUP, timesync_powermgm_event_cb, "timesync" );
 }
 
-void timesync_wifictl_event_cb( EventBits_t event, char* msg ) {
-    log_i("timesync wifictl event: %04x", event );
-
-    switch ( event ) {
-        case WIFICTL_CONNECT:       if ( timesync_config.timesync ) {
-                                        if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) {
-                                            return;
-                                        }
-                                        else {
-                                            xEventGroupSetBits( time_event_handle, TIME_SYNC_REQUEST );
-                                            xTaskCreate(  timesync_Task,      /* Function to implement the task */
-                                                        "timesync Task",    /* Name of the task */
-                                                        2000,              /* Stack size in words */
-                                                        NULL,               /* Task input parameter */
-                                                        1,                  /* Priority of the task */
-                                                        &_timesync_Task );  /* Task handle. */
-                                        }
-                                    }
-                                    break;
+bool timesync_powermgm_event_cb( EventBits_t event, void *arg ) {
+    switch( event ) {
+        case POWERMGM_STANDBY:          
+            // only update rtc time when an NTP timesync was success
+            if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_OK ) {
+                timesyncToRTC();
+                xEventGroupClearBits( time_event_handle, TIME_SYNC_OK );
+                log_i("go standby, timesync to RTC");
+            }
+            else {
+                log_i("go standby");
+            }
+            break;
+        case POWERMGM_WAKEUP:           
+            log_i("go wkaeup");
+            timesyncToSystem();
+            break;
+        case POWERMGM_SILENCE_WAKEUP:   
+            log_i("go silence wakeup");
+            timesyncToSystem();
+            break;
     }
+    return( true );
+}
+
+bool timesync_wifictl_event_cb( EventBits_t event, void *arg ) {
+    switch ( event ) {
+        case WIFICTL_CONNECT:       
+            if ( timesync_config.timesync ) {
+            if ( xEventGroupGetBits( time_event_handle ) & TIME_SYNC_REQUEST ) {
+                break;
+            }
+            else {
+                xEventGroupSetBits( time_event_handle, TIME_SYNC_REQUEST );
+                xTaskCreate(  timesync_Task,      /* Function to implement the task */
+                            "timesync Task",    /* Name of the task */
+                            2000,              /* Stack size in words */
+                            NULL,               /* Task input parameter */
+                            1,                  /* Priority of the task */
+                            &_timesync_Task );  /* Task handle. */
+            }
+        }
+        break;
+    }
+    return( true );
 }
 
 void timesync_save_config( void ) {
@@ -203,6 +229,9 @@ void timesync_Task( void * pvParameters ) {
 
     if( !getLocalTime( &info ) ) {
         log_e("Failed to obtain time" );
+    }
+    else {
+        xEventGroupSetBits( time_event_handle, TIME_SYNC_OK );
     }
   }
   xEventGroupClearBits( time_event_handle, TIME_SYNC_REQUEST );

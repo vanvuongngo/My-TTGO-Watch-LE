@@ -23,18 +23,12 @@
     #define _BMA_H
 
     #include "TTGO.h"
+    #include "callback.h"
     
-    #define BMACTL_EVENT_INT           _BV(0)
-    #define BMACTL_DOUBLECLICK         _BV(1)
-    #define BMACTL_STEPCOUNTER         _BV(2)
-    #define BMACTL_TILT                _BV(3)
-
-    typedef void ( * BMA_CALLBACK_FUNC ) ( EventBits_t event, const char *msg );
-
-    typedef struct {
-        EventBits_t event;
-        BMA_CALLBACK_FUNC event_cb;
-    } bma_event_cb_t;
+    #define BMACTL_EVENT_INT            _BV(0)
+    #define BMACTL_DOUBLECLICK          _BV(1)
+    #define BMACTL_STEPCOUNTER          _BV(2)
+    #define BMACTL_TILT                 _BV(3)
 
     #define BMA_COFIG_FILE          "/bma.cfg"
     #define BMA_JSON_COFIG_FILE     "/bma.json"
@@ -50,59 +44,62 @@
         BMA_CONFIG_NUM
     };
 
-    /*
+    /**
      * @brief setup bma activity measurement
      */
     void bma_setup( void );
-    /*
+    /**
      * @brief loop function for activity measurement
      */
     void bma_loop( void );
-    /*
+    /**
      * @brief put bma into standby, depending on ther config
      */
     void bma_standby( void );
-    /*
+    /**
      * @brief wakeup activity measurement
      */
     void bma_wakeup( void );
-    /*
+    /**
      * @brief reload config
      */
     void bma_reload_settings( void );
-    /*
+    /**
      * @brief save the config structure to SPIFFS
      */
     void bma_save_config( void );
-    /*
+    /**
      * @brief read the config structure from SPIFFS
      */
     void bma_read_config( void );
-    /*
+    /**
      * @brief get config
      * 
      * @param   config     configitem: BMA_STEPCOUNTER, BMA_DOUBLECLICK or BMA_CONFIG_NUM
      */
     bool bma_get_config( int config );
-    /*
+    /**
      * @brief set config
      * 
      * @param   config     configitem: BMA_STEPCOUNTER, BMA_DOUBLECLICK or BMA_CONFIG_NUM
      * @param   bool    true or false
      */
     void bma_set_config( int config, bool enable );
-    /*
+    /**
      * @brief   rotate bma axis
      * 
      * @param   rotation on degree
      */
     void bma_set_rotate_tilt( uint32_t rotation );
-    /*
+    /**
      * @brief registers a callback function which is called on a corresponding event
      * 
-     * @param   event   possible values: BMACTL_DOUBLECLICK, BMACTL_STEPCOUNTER and BMACTL_TILT
-     * @param   rtc_event_cb   pointer to the callback function 
+     * @param   event           possible values: BMACTL_DOUBLECLICK, BMACTL_STEPCOUNTER and BMACTL_TILT
+     * @param   callback_func   pointer to the callback function
+     * @param   id              program id
+     * 
+     * @return  true if success, false if failed
      */
-    void bma_register_cb( EventBits_t event, BMA_CALLBACK_FUNC bma_event_cb );
+    bool bma_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
 
 #endif // _BMA_H

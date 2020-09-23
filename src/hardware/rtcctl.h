@@ -23,64 +23,67 @@
     #define _RTCCTL_H
 
     #include "TTGO.h"
+    #include "callback.h"
 
-    #define RTCCTL_ALARM            _BV(0)
-    #define RTCCTL_ALARM_SET        _BV(1)
-    #define RTCCTL_ALARM_DISABLE    _BV(2)
-    #define RTCCTL_ALARM_ENABLE     _BV(3)
+    #define RTCCTL_ALARM_OCCURRED    _BV(0)
+    #define RTCCTL_ALARM_TERM_SET    _BV(1)
+    #define RTCCTL_ALARM_DISABLED    _BV(2)
+    #define RTCCTL_ALARM_ENABLED     _BV(3)
 
-    typedef void ( * RTCCTL_CALLBACK_FUNC ) ( EventBits_t event );
-
-    typedef struct {
-        EventBits_t event;
-        RTCCTL_CALLBACK_FUNC event_cb;
-    } rtcctl_event_cb_t;
-
-    /*
+    /**
      * @brief setup rtc controller routine
      */
     void rtcctl_setup( void );
-    /*
+    /**
      * @brief rtc controller loop routine
      */
     void rtcctl_loop( void );
-    /*
+    /**
      * @brief registers a callback function which is called on a corresponding event
      * 
-     * @param   event   possible values: RTCCTL_ALARM, RTCCTL_ALARM_SET, RTCCTL_ALARM_ENABLE and RTCCTL_ALARM_DISABLE
-     * @param   rtc_event_cb   pointer to the callback function 
-     */
-    void rtcctl_register_cb( EventBits_t event, RTCCTL_CALLBACK_FUNC rtc_event_cb );
-    /*
-     * @brief set an alarm time
+     * @param   event           possible values: RTCCTL_ALARM, RTCCTL_ALARM_SET, RTCCTL_ALARM_ENABLE and RTCCTL_ALARM_DISABLE
+     * @param   callback_func   pointer to the callback function 
+     * @param   id              programm id
      * 
+     * @return  true if success, false if failed
+     */
+    bool rtcctl_register_cb( EventBits_t event, CALLBACK_FUNC callback_func, const char *id );
+    /**
+     * @brief set an alarm time
+     *
      * @param   hour    hour to set
      * @param   minute  minute to set
-     * 
      */
-    void rtcctl_set_alarm( uint8_t hour, uint8_t minute );
-    /*
+    void rtcctl_set_alarm_term( uint8_t hour, uint8_t minute );
+    /**
      * @brief   enable alarm
      */
     void rtcctl_enable_alarm( void );
-    /*
+    /**
      * @brief   disable alarm
      */
     void rtcctl_disable_alarm( void );
-    /*
+    /**
      * @brief   check rtc time
-     * 
-     * @param   hour to check
-     * @param   minute to check
-     * 
+     *
      * @return  true if equal, otherwise false
      */
-    bool rtcctl_is_time( uint8_t hour, uint8_t minute );
-    /*
+    bool rtcctl_is_alarm_time();
+    /**
      * @brief   get the current alarm state
      * 
      * @return  true if enable, false is disable
      */
-    bool rtcctl_get_alarmstate( void );
+    bool rtcctl_is_alarm_enabled( void );
+
+    /*
+     * @brief   returns currently set alarm hour - a value can be set when alarm is currently disabled as well
+     */
+    uint8_t rtcctl_get_alarm_hour();
+
+    /*
+     * @brief   returns currently set alarm minute - a value can be set when alarm is currently disabled as well
+     */
+    uint8_t rtcctl_get_alarm_minute();
 
 #endif // _RTCCTL_H
